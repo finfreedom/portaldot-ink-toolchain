@@ -1,0 +1,43 @@
+[package]
+name = "flipper"
+version = "0.1.0"
+authors = ["[your_name] <[your_email]>"]
+edition = "2018"
+
+[dependencies]
+ink_primitives = { version = "=3.0.0-rc3", default-features = false }
+ink_metadata = { version = "=3.0.0-rc3", default-features = false, features = ["derive"], optional = true }
+ink_env = { version = "=3.0.0-rc3", default-features = false }
+ink_storage = { version = "=3.0.0-rc3", default-features = false }
+ink_lang = { version = "=3.0.0-rc3", default-features = false }
+# Прибито намертво: cargo-contract копирует проект во временную папку и
+# пересчитывает зависимости, игнорируя Cargo.lock. Без этих строк semver
+# утаскивает часть крейтов ink в 3.4.0, и ink_lang_macro rc3 не находит
+# ink_lang_ir::InkTrait - его переименовали после rc3.
+ink_lang_ir = { version = "=3.0.0-rc3", default-features = false }
+ink_prelude = { version = "=3.0.0-rc3", default-features = false }
+ink_allocator = { version = "=3.0.0-rc3", default-features = false }
+
+scale = { package = "parity-scale-codec", version = "=2.3.1", default-features = false, features = ["derive"] }
+scale-info = { version = "=0.6.0", default-features = false, features = ["derive"], optional = true }
+
+[lib]
+name = "flipper"
+path = "lib.rs"
+crate-type = [
+	# Used for normal contract Wasm blobs.
+	"cdylib",
+]
+
+[features]
+default = ["std"]
+std = [
+    "ink_metadata/std",
+    "ink_env/std",
+    "ink_storage/std",
+    "ink_primitives/std",
+    "ink_prelude/std",
+    "scale/std",
+    "scale-info/std",
+]
+ink-as-dependency = []
