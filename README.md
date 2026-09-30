@@ -233,6 +233,40 @@ await provider.send('contracts_call', [{
 }]);
 ```
 
+## Bonus trap: the Python SDK
+
+Portaldot's docs tell you to connect like this:
+
+```python
+portaldot = SubstrateInterface(url="wss://mainnet.portaldot.io",
+                               ss58_format=42,
+                               type_registry_preset='default')
+```
+
+`'default'` no longer exists in current `scalecodec` — you get
+`ValueError: Unsupported type registry preset "default"`. Omitting the preset
+fails differently: `NotImplementedError: Decoder class for "ActiveEraInfo" not found`.
+
+The preset that works against this runtime is **`legacy`**:
+
+```python
+from substrateinterface import SubstrateInterface
+
+substrate = SubstrateInterface(
+    url="wss://mainnet.portaldot.io",
+    ss58_format=42,
+    type_registry_preset="legacy",
+)
+```
+
+With that, storage reads, `query_map`, and **event decoding** all work.
+
+Worth noting: current `@polkadot/api` fails to decode this chain's
+`system.events` (`Decoded input doesn't match input`) and produces
+`Invalid Transaction: Transaction has a bad signature` for some extrinsics.
+`py-substrate-interface` with the `legacy` preset handles both correctly. If
+you are choosing a client for Portaldot today, that is a point for Python.
+
 ## Still open
 
 Generating `metadata.json` and the bundled `.contract` file. Both are produced
