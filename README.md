@@ -267,6 +267,68 @@ Worth noting: current `@polkadot/api` fails to decode this chain's
 `py-substrate-interface` with the `legacy` preset handles both correctly. If
 you are choosing a client for Portaldot today, that is a point for Python.
 
+### Proxy pallet types are missing from the `legacy` preset
+
+Reading `Proxy.Proxies` or `Proxy.Announcements` fails with
+
+```
+NotImplementedError: Decoder class for "ProxyDefinition<AccountId, ProxyType" not found
+```
+
+The type strings in this runtime's metadata are also malformed — double
+spaces and trailing commas — so aliases must be registered against the
+**exact** strings. `BoundedVec` is SCALE-encoded identically to `Vec`, so
+substituting it loses nothing:
+
+```python
+PD = "(BoundedVec<ProxyDefinition<AccountId, ProxyType,  BlockNumber>, MaxProxies,>, BalanceOf)"
+AN = "(BoundedVec<Announcement<AccountId, CallHashOf,  BlockNumber>, MaxPending,>, BalanceOf,)"
+
+PROXY_TYPES = {"types": {
+    "ProxyType": {"type": "enum",
+                  "value_list": ["Any", "NonTransfer", "Governance", "Staking"]},
+    "ProxyDefinition": {"type": "struct", "type_mapping": [
+        ["delegate", "AccountId"], ["proxy_type", "ProxyType"], ["delay", "BlockNumber"]]},
+    "Announcement": {"type": "struct", "type_mapping": [
+        ["real", "AccountId"], ["call_hash", "Hash"], ["height", "BlockNumber"]]},
+    "ProxiesOf": {"type": "struct", "type_mapping": [
+        ["definitions", "Vec<ProxyDefinition>"], ["deposit", "Balance"]]},
+    "AnnouncementsOf": {"type": "struct", "type_mapping": [
+        ["announcements", "Vec<Announcement>"], ["deposit", "Balance"]]},
+    PD: "ProxiesOf",
+    AN: "AnnouncementsOf",
+}}
+
+substrate = SubstrateInterface(url=..., ss58_format=42,
+                               type_registry_preset="legacy",
+                               type_registry=PROXY_TYPES)
+```
+
+### A note on `ProxyType::Staking`
+
+Worth knowing before you build anything on proxies here. The runtime defines
+the filter as:
+
+```rust
+ProxyType::Staking => matches!(c, Call::Staking(..)),
+```
+
+That is **every** call in `pallet_staking`, with no exceptions — including
+`set_payee`, which lets the delegate redirect all future staking rewards to
+an arbitrary account. A `Staking` proxy is not "can only nominate".
+
+`pallet_proxy` here does support delayed proxies, and the delay genuinely
+closes the direct path:
+
+```rust
+ensure!(def.delay.is_zero(), Error::<T>::Unannounced);
+```
+
+So with `add_proxy(delegate, Staking, delay)` the delegate must `announce`,
+wait, and then `proxy_announced`, and the principal can `reject_announcement`
+in between. Verified end to end against a local `--dev` chain built from the
+published `Portaldot-node` binary.
+
 ## Still open
 
 Generating `metadata.json` and the bundled `.contract` file. Both are produced
