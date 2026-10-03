@@ -1,5 +1,35 @@
 # Building and deploying ink! smart contracts on Portaldot
 
+> ## ⚠️ Which chain is this for?
+>
+> **This recipe is for Portaldot _mainnet_** (`spec_name: portaldot`,
+> `spec_version: 1002`, `Contracts.palletVersion: 0`). That runtime dates from
+> Substrate 3.0 and needs a 2021 toolchain, which is what the rest of this
+> document is about.
+>
+> **It is NOT needed for the PortaldotV3 testnet**, announced 2 October 2026.
+> Measured on `wss://testnetv3-node.feso-apps.xyz`:
+>
+> | | mainnet | V3 testnet |
+> |---|---|---|
+> | `spec_name` / `spec_version` | `portaldot` / 1002 | `portaldotV3` / 3000 |
+> | pallets | 31 | 70 |
+> | `Contracts.palletVersion` | **0** | **16** |
+> | `Revive` (PolkaVM / Solidity) | absent | **present** |
+> | `NominationPools` | absent | present |
+>
+> ink! documents that ink! 5 requires `Contracts.palletVersion >= 9`. V3 reports
+> **16**, so on V3 you can simply use **current ink! 5 and cargo-contract 4+**,
+> or Solidity through `pallet-revive`. None of the 2021 archaeology below
+> applies there.
+>
+> Official V3 testnet guide and samples:
+> https://github.com/ItsCogumellum/portaldot-v3-testnet-guide
+>
+> Everything below remains correct and necessary **for mainnet**, which still
+> runs the 2021 runtime at the time of writing.
+
+
 A working, end-to-end recipe for compiling an ink! contract and deploying it to
 [Portaldot Network](https://www.portaldot.world/).
 
