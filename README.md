@@ -28,6 +28,40 @@
 >
 > Everything below remains correct and necessary **for mainnet**, which still
 > runs the 2021 runtime at the time of writing.
+>
+> ### Verified: what building for V3 actually takes
+>
+> ```bash
+> cargo install cargo-contract --version "^5" --locked
+> rustup component add rust-src --toolchain stable
+> rustup target add wasm32-unknown-unknown --toolchain stable
+> cargo contract new my_contract && cd my_contract
+> cargo contract build --release
+> ```
+>
+> That is the whole thing. Stock `stable` Rust, no pinned versions, no flags,
+> ~90 seconds — and unlike the mainnet path it produces the full bundle
+> including `metadata.json`.
+>
+> | | mainnet | V3 testnet |
+> |---|---|---|
+> | cargo-contract | 0.12.1 (2021) | 5.0.3 |
+> | ink! | 3.0.0-rc3 | 5.1.1 |
+> | compiler | `nightly-2021-08-01` | `stable` 1.87 |
+> | pins in Cargo.toml | 8 | none |
+> | lockfile surgery | dozens of downgrades | none |
+> | special flags | `-Z original-manifest` | none |
+> | `metadata.json` | **not produced** | produced |
+> | wasm size (flipper) | 5221 B | 1692 B |
+>
+> **The two chains' artifacts are mutually incompatible**, verified by imports:
+> an ink! 5 contract imports `seal1 get_storage` / `seal2 set_storage`, host
+> functions the mainnet pallet does not have at all. Keep both toolchains
+> installed side by side if you target both:
+>
+> ```bash
+> cargo install cargo-contract --version "^5" --root ~/.local/cargo-contract-v5
+> ```
 
 
 A working, end-to-end recipe for compiling an ink! contract and deploying it to
